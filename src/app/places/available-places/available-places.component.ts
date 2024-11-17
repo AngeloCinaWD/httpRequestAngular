@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Place } from '../place.model';
 import { PlacesComponent } from '../places.component';
 import { PlacesContainerComponent } from '../places-container/places-container.component';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-available-places',
@@ -66,9 +67,14 @@ export class AvailablePlacesComponent implements OnInit {
 
     const getPlaces = this.httpClient
       .get<{ places: Place[] }>('http://localhost:3000/places')
+      // posso utilizzare il map per restituire direttamente i places, dato che ricevo il body avrei un oggetto con all'interno una proprietà places
+      // il valore emesso dall'observable Http è uno solo, quindi il map agisce una sola volta
+      .pipe(map((body) => body.places))
       .subscribe({
-        next: (resData) => {
-          console.log(resData);
+        next: (places) => {
+          // assegno i dati al mio signal, utilizzando il map prima non ho bisogno di fare response.places perchè ho già l'array di Place, cioè il value della key places contenuta nel body
+          // il mio signal places è ora un array di Place
+          this.places.set(places);
         },
         complete: () => console.log('complete'),
       });
