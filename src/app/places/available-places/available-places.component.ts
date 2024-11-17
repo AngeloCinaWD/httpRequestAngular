@@ -23,8 +23,13 @@ export class AvailablePlacesComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   places = signal<Place[] | undefined>(undefined);
+  // creo un nuovo signal per gestire la fase di caricamento dati, un booleano, ad esempio per mostrare uno spinner di caricamento
+  isFetching = signal<boolean>(false);
 
   ngOnInit(): void {
+    // setto il valore di isFetching a true, prima di effettuare il fetch dei dati tramite request Http
+    this.isFetching.set(true);
+
     // recupero i places, mi arriverà un oggetto con una key places con value un array di Place
     // in genere gli observables prodotti dall'HttpClient emettono un solo valore, hanno quindi anche un complete event e non sarebbe necessario annullare la sottoscrizione
     // i dati arrivano con un po' di ritardo perchè è stato settato un ritardo nella risposta di 3 secondi nel backend implementato con nodeJs
@@ -76,7 +81,9 @@ export class AvailablePlacesComponent implements OnInit {
           // il mio signal places è ora un array di Place
           this.places.set(places);
         },
-        complete: () => console.log('complete'),
+        // il complete mi trona utile per settare il valore di isFetching a false perchè ho terminato il fetching dei dati
+        //  perchè sono sicuro che verrà eseguito una volta che la request è stata completata
+        complete: () => this.isFetching.set(false),
       });
 
     this.destroyRef.onDestroy(() => {
