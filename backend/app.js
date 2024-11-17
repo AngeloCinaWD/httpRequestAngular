@@ -22,6 +22,9 @@ app.get("/places", async (req, res) => {
   // la risposta viene inviata con 3 secondi di ritardo
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
+  // provoco volontariamente una risposta con errore 500
+  // return res.status(500).json();
+
   const fileContent = await fs.readFile("./data/places.json");
 
   const placesData = JSON.parse(fileContent);

@@ -1,10 +1,10 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 import { Place } from '../place.model';
 import { PlacesComponent } from '../places.component';
 import { PlacesContainerComponent } from '../places-container/places-container.component';
-import { map } from 'rxjs';
+import { catchError, map, throwError } from 'rxjs';
 
 @Component({
   selector: 'app-available-places',
@@ -25,6 +25,8 @@ export class AvailablePlacesComponent implements OnInit {
   places = signal<Place[] | undefined>(undefined);
   // creo un nuovo signal per gestire la fase di caricamento dati, un booleano, ad esempio per mostrare uno spinner di caricamento
   isFetching = signal<boolean>(false);
+  // creo un signal per getsire gli errori che possono capitare ad esempio perchè manca internet o perchè c'è un problema nel BE
+  error = signal<string>('');
 
   ngOnInit(): void {
     // setto il valore di isFetching a true, prima di effettuare il fetch dei dati tramite request Http
@@ -70,13 +72,22 @@ export class AvailablePlacesComponent implements OnInit {
     //     complete: () => console.log('complete'),
     //   });
 
+    // si potrebbero verificare errori nel backend e vanno gestiti, ad esempio ricevo una risposta dal backend con uno status 500
+    // utilizzo l'error property del subscribe che mi intercetta un eventuale errore durante la request http
     const getPlaces = this.httpClient
       .get<{ places: Place[] }>('http://localhost:3000/places')
       // posso utilizzare il map per restituire direttamente i places, dato che ricevo il body avrei un oggetto con all'interno una proprietà places
       // il valore emesso dall'observable Http è uno solo, quindi il map agisce una sola volta
-      .pipe(map((body) => body.places))
+      // per gestire gli errori posso utilizzare l'operator catchError() che ha come argomento l'errore intercettato
+      // l'errore però deve essere restituito come observable, catchError non restituisce un observable, utilizzo la funzione rxjs throwError() in modo che la error property del subscriber venga attivata
+      // in throwError istanzio una classe js Error
+      // facendo in questo modo posso bloccare qualsiasi errore e mettere un messaggio di errore per tutti i tipi ed assegnare il tipo Error all'error argument della callback function della error property
+      .pipe(
+        map((body: { places: Place[] }) => body.places),
+        catchError((error) => throwError(() => new Error('erroreeee')))
+      )
       .subscribe({
-        next: (places) => {
+        next: (places: Place[]) => {
           // assegno i dati al mio signal, utilizzando il map prima non ho bisogno di fare response.places perchè ho già l'array di Place, cioè il value della key places contenuta nel body
           // il mio signal places è ora un array di Place
           this.places.set(places);
@@ -84,6 +95,9 @@ export class AvailablePlacesComponent implements OnInit {
         // il complete mi trona utile per settare il valore di isFetching a false perchè ho terminato il fetching dei dati
         //  perchè sono sicuro che verrà eseguito una volta che la request è stata completata
         complete: () => this.isFetching.set(false),
+        // setto il signal error con il valore tornato dall'error property
+        // error: (error: HttpErrorResponse) => this.error.set(error.statusText),
+        error: (error: Error) => this.error.set(error.message),
       });
 
     this.destroyRef.onDestroy(() => {
