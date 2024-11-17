@@ -27,10 +27,49 @@ export class AvailablePlacesComponent implements OnInit {
     // recupero i places, mi arriverà un oggetto con una key places con value un array di Place
     // in genere gli observables prodotti dall'HttpClient emettono un solo valore, hanno quindi anche un complete event e non sarebbe necessario annullare la sottoscrizione
     // i dati arrivano con un po' di ritardo perchè è stato settato un ritardo nella risposta di 3 secondi nel backend implementato con nodeJs
+    // è possibile passare dei parametri di configurazione della request aggiungendo un oggetto con delle proprietà (senza parametri di configurazione mi arriva direttamente il body)
+    // se invio la request senza passare nulla ottengo i dati e basta, se per esempio passo la proprietà observe: 'response' ottengo tutta la response, che di solito contiene un body, un oggetto con i dati al suo interno, l'headers, lo status, l'ok etc etc
+
+    // const getPlaces = this.httpClient
+    //   .get<{ places: Place[] }>('http://localhost:3000/places')
+    //   .subscribe({
+    //     next: (data) => console.log(data.places),
+    //     complete: () => console.log('complete'),
+    //   });
+
+    // in caso la response non contenga un body, ma vogliamo utilizzarlo, mettiamo il ? dopo body: response.body?.places
+    // cioè se body esiste prendimi places, altrimenti mi si bloccherebbe il codice perchè prova a chiamare una property di un oggetto che non esiste
+
+    // const getPlaces = this.httpClient
+    //   .get<{ places: Place[] }>('http://localhost:3000/places', {
+    //     observe: 'response',
+    //   })
+    //   .subscribe({
+    //     next: (response) => {
+    //       console.log(response);
+    //       console.log(response.body?.places);
+    //     },
+    //     complete: () => console.log('complete'),
+    //   });
+
+    // settando la proprietà observe su events, la risposta mi arriverà più volte, a seconda del ciclo di vita della request
+    // const getPlaces = this.httpClient
+    //   .get<{ places: Place[] }>('http://localhost:3000/places', {
+    //     observe: 'events',
+    //   })
+    //   .subscribe({
+    //     next: (events) => {
+    //       console.log(events);
+    //     },
+    //     complete: () => console.log('complete'),
+    //   });
+
     const getPlaces = this.httpClient
       .get<{ places: Place[] }>('http://localhost:3000/places')
       .subscribe({
-        next: (data) => console.log(data.places),
+        next: (resData) => {
+          console.log(resData);
+        },
         complete: () => console.log('complete'),
       });
 
